@@ -3,5 +3,7 @@ This repository contains the code and data for a developmental psychology prosoc
 
 Files 
 Prosocial data: Shows the data before analyses. Uploaded as a .csv file. 
+
 Code: Shows the R code for the statistical analyses we did for the project. Uploaded as a .Rmd file. 
+
 Code HTML Version: Shows the R code for the statistical analyses we did for the project. Uploaded as a .html file. 
