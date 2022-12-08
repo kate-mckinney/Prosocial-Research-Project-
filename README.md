@@ -6,3 +6,5 @@ Files
 Prosocial data: Shows the data before analyses. Uploaded as a .csv file. 
 
 Prosocial Code: Shows the R code for the statistical analyses we did for the project. Uploaded as a .Rmd file. 
+
+Coding Manual: Shows how the data was coded. Uploaded as a .pdf file. 
