@@ -1,0 +1,110 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+library(readr)
+ps_dat <- read_csv("C:/Users/katem/Downloads/Prosocial Data - Sheet1.csv")
+
+chooseNumeric1 <- ifelse(ps_dat$choose_friend1=="f", 1, 0)
+chooseNumeric2 <- ifelse(ps_dat$choose_friend2=="f", 1, 0)
+chooseNumeric3 <- ifelse(ps_dat$choose_friend3=="f", 1, 0)
+chooseNumeric4 <- ifelse(ps_dat$choose_friend4=="f", 1, 0)
+chooseNumeric5 <- ifelse(ps_dat$choose_friend5=="f", 1, 0)
+chooseNumeric6 <- ifelse(ps_dat$choose_friend6=="f", 1, 0)
+
+choose_friend_indice <- c(chooseNumeric1 + chooseNumeric2 + chooseNumeric3 +chooseNumeric4 + chooseNumeric5 +chooseNumeric6)
+
+library(tidyverse)
+```
+#Question 1 data manipulation
+```{r}
+friendDat = ps_dat
+```
+
+
+```{r}
+#INDICE FOR COMFORTING BEHAVIORS 
+comfort1 <- ifelse(friendDat$type_help1=="comfort", 1, 0)
+comfort2 <- ifelse(friendDat$type_help2=="comfort", 1, 0)
+comfort3 <- ifelse(friendDat$type_help3=="comfort", 1, 0)
+comfort4 <- ifelse(friendDat$type_help4=="comfort", 1, 0)
+comfort5 <- ifelse(friendDat$type_help5=="comfort", 1, 0)
+comfort6 <- ifelse(friendDat$type_help6=="comfort", 1, 0)
+
+comfort_indice <- c(comfort1+comfort2+comfort3+comfort4+comfort5+comfort6)
+```
+
+```{r}
+#INDICE FOR SHARING BEHAVIORS 
+share1 <- ifelse(friendDat$type_help1=="share", 1, 0)
+share2 <- ifelse(friendDat$type_help2=="share", 1, 0)
+share3 <- ifelse(friendDat$type_help3=="share", 1, 0)
+share4 <- ifelse(friendDat$type_help4=="share", 1, 0)
+share5 <- ifelse(friendDat$type_help5=="share", 1, 0)
+share6 <- ifelse(friendDat$type_help6=="share", 1, 0)
+
+share_indice <- c(share1+share2+share3+share4+share5+share6)
+```
+
+```{r}
+#INDICE FOR INSTRUMENTAL HELPING BEHAVIORS 
+goal1 <- ifelse(friendDat$type_help1=="goal", 1, 0)
+goal2 <- ifelse(friendDat$type_help2=="goal", 1, 0)
+goal3 <- ifelse(friendDat$type_help3=="goal", 1, 0)
+goal4 <- ifelse(friendDat$type_help4=="goal", 1, 0)
+goal5 <- ifelse(friendDat$type_help5=="goal", 1, 0)
+goal6 <- ifelse(friendDat$type_help6=="goal", 1, 0)
+
+goal_indice <- c(goal1+goal2+goal3+goal4+goal5+goal6)
+```
+
+```{r}
+#Question 1: Do children demonstrate? Goal directed, comforting, or sharing responses more often? 
+
+indice_dat = cbind.data.frame(ps_dat$databraryID, ps_dat$sex, ps_dat$age, ps_dat$study, comfort_indice, share_indice, goal_indice)
+
+indice_long <- gather(indice_dat, type_help, num_times, comfort_indice:goal_indice, factor_key=TRUE)
+
+model1 <- (aov(num_times~type_help + `ps_dat$age` + `ps_dat$study`, data=indice_long))
+
+
+```
+
+
+
+#Question 2 data manipulation
+```{r}
+#Question 2: Do children display different helping behaviors when responding to a friend’s needs than a nonfriend’s needs? 
+
+make_long <- cbind.data.frame(ps_dat$databraryID ,ps_dat$age,ps_dat$study,ps_dat$choose_friend1, ps_dat$choose_friend2, ps_dat$choose_friend3, ps_dat$choose_friend4, ps_dat$choose_friend5, ps_dat$choose_friend6, ps_dat$type_help1,ps_dat$type_help2,ps_dat$type_help3,ps_dat$type_help4,ps_dat$type_help5,ps_dat$type_help6)
+
+library(tidyr)
+data_long1 <- gather(make_long, trial_num, choose_friend, 'ps_dat$choose_friend1':'ps_dat$choose_friend6', factor_key=TRUE)
+
+data_long <- gather(data_long1, trial_numb, type, 'ps_dat$type_help1':'ps_dat$type_help6', factor_key=TRUE)
+data_long$choose_friend_num <- ifelse(data_long$choose_friend=="f", 1, 0)
+
+#aov(type~choose_friend_num, data=data_long)
+
+#kruskal.test(type ~ choose_friend, data = data_long) 
+#kruskal.test(type ~ `ps_dat$age`, data = data_long) 
+```
+
+```{r}
+f_dat <- subset(test_dat, choose_friend=="f")
+  
+f_dat <- spread(f_dat, key = "type", value= "choose_friend_num")
+```
+
+#Question 3 data manipulation
+```{r}
+data_long$choose_friend_num <- ifelse(data_long$choose_friend=="f", 1, 0)
+
+summary(glm(choose_friend_num ~ `ps_dat$study` + `ps_dat$age`, family = binomial(),data= data_long))
+```
+
+
