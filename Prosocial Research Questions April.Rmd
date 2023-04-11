@@ -1,12 +1,22 @@
 ---
-title: "R Notebook"
-output: html_notebook
-editor_options: 
+title: "Prosocial Statistical Testing"
+output:
+  html_notebook: default
+  pdf_document: default
+editor_options:
   chunk_output_type: inline
 ---
+```{r}
+library(tidyr)
+library(tidyverse)
+library(nlme)
+library(multcomp)
+require(multcomp)
+library(readr)
+library(lme4)
+```
 
 ```{r}
-library(readr)
 ps_dat <- read_csv("C:/Users/katem/Downloads/Prosocial Data - Sheet1.csv")
 
 chooseNumeric1 <- ifelse(ps_dat$choose_friend1=="f", 1, 0)
@@ -17,14 +27,10 @@ chooseNumeric5 <- ifelse(ps_dat$choose_friend5=="f", 1, 0)
 chooseNumeric6 <- ifelse(ps_dat$choose_friend6=="f", 1, 0)
 
 choose_friend_indice <- c(chooseNumeric1 + chooseNumeric2 + chooseNumeric3 +chooseNumeric4 + chooseNumeric5 +chooseNumeric6)
-
-library(tidyverse)
 ```
-#Question 1 data manipulation
 ```{r}
 friendDat = ps_dat
 ```
-
 
 ```{r}
 #INDICE FOR COMFORTING BEHAVIORS 
@@ -62,49 +68,99 @@ goal6 <- ifelse(friendDat$type_help6=="goal", 1, 0)
 goal_indice <- c(goal1+goal2+goal3+goal4+goal5+goal6)
 ```
 
+#Question 1
 ```{r}
 #Question 1: Do children demonstrate? Goal directed, comforting, or sharing responses more often? 
 
+# Creating subset of data, renaming variables, and changing classes to factor 
 indice_dat = cbind.data.frame(ps_dat$databraryID, ps_dat$sex, ps_dat$age, ps_dat$study, comfort_indice, share_indice, goal_indice)
 
 indice_long <- gather(indice_dat, type_help, num_times, comfort_indice:goal_indice, factor_key=TRUE)
 
-model1 <- (aov(num_times~type_help + `ps_dat$age` + `ps_dat$study`, data=indice_long))
+names(indice_long)[names(indice_long) == "ps_dat$databraryID"] <- "participant_ID"
+names(indice_long)[names(indice_long) == "ps_dat$sex"] <- "sex"
+names(indice_long)[names(indice_long) == "ps_dat$age"] <- "age"
+names(indice_long)[names(indice_long) == "ps_dat$study"] <- "study"
+indice_long$age <- as.factor(indice_long$age)
+indice_long$study <- as.factor(indice_long$study)
 
+#Statistical significance testing 
+aov_1 <- (aov(num_times ~ type_help + age + study+ Error(`participant_ID`/type_help), data=indice_long))
+summary(aov_1)
 
+lme_1 <- lme(num_times ~ type_help + age + study, data=indice_long, random=~1|`participant_ID`)
+anova(lme_1)
+
+#Post hoc tests
+#Type of help
+summary(glht(post_hoc1, linfct=mcp(type_help = "Tukey")), test = adjusted(type = "bonferroni"))
+
+#Context/Study
+summary(glht(post_hoc1, linfct=mcp(study = "Tukey")), test = adjusted(type = "bonferroni"))
 ```
 
 
 
-#Question 2 data manipulation
+#Question 2 
 ```{r}
-#Question 2: Do children display different helping behaviors when responding to a friend’s needs than a nonfriend’s needs? 
-
+#Creating subset of dataset 
 make_long <- cbind.data.frame(ps_dat$databraryID ,ps_dat$age,ps_dat$study,ps_dat$choose_friend1, ps_dat$choose_friend2, ps_dat$choose_friend3, ps_dat$choose_friend4, ps_dat$choose_friend5, ps_dat$choose_friend6, ps_dat$type_help1,ps_dat$type_help2,ps_dat$type_help3,ps_dat$type_help4,ps_dat$type_help5,ps_dat$type_help6)
 
-library(tidyr)
-data_long1 <- gather(make_long, trial_num, choose_friend, 'ps_dat$choose_friend1':'ps_dat$choose_friend6', factor_key=TRUE)
+datLong<- pivot_longer(make_long, c(colnames(make_long[4:15])), names_to= "trial", values_to="data")
 
+intermediateDat<- datLong %>% separate(col = trial, into = c("response", "trialNumber"), sep= -1)
+
+finalDat<- pivot_wider(intermediateDat, id_cols = c("ps_dat$databraryID", "ps_dat$study", "ps_dat$age", "trialNumber"),names_from = "response", values_from= "data")
+
+finalDat$id<- as.factor(finalDat$`ps_dat$databraryID`)
+finalDat$trialNumber<- as.factor(finalDat$trialNumber)
+finalDat$chooseFriend<- as.factor(finalDat$`ps_dat$choose_friend`)
+finalDat$typeHelp<- as.factor(finalDat$`ps_dat$type_help`)
+
+table<- finalDat %>% group_by(id, chooseFriend) %>% 
+  summarize(typeHelp,total_count = n())
+#View(table)
+
+a<-unique(table)
+#View(a)
+
+goal<- subset(a, a$typeHelp=="goal")
+summary(aov(total_count~chooseFriend, data=goal))
+
+#Statistical significance testing 
+#Dr. W is playing around with this. Will add later.  
+
+post_hoc3 <- lme(total_count~chooseFriend, data=a, random=~1|`id`)
+anova(post_hoc3)
+
+#Post hoc test
+#chooseFriend 
+summary(glht(post_hoc3, linfct=mcp(chooseFriend = "Tukey")), test = adjusted(type = "bonferroni"))
+```
+#Question 3 
+```{r}
+#Data manipulation 
+data_long1 <- gather(make_long, trial_num, choose_friend, 'ps_dat$choose_friend1':'ps_dat$choose_friend6', factor_key=TRUE)
 data_long <- gather(data_long1, trial_numb, type, 'ps_dat$type_help1':'ps_dat$type_help6', factor_key=TRUE)
 data_long$choose_friend_num <- ifelse(data_long$choose_friend=="f", 1, 0)
 
-#aov(type~choose_friend_num, data=data_long)
+names(data_long)[names(data_long) == "ps_dat$databraryID"] <- "participant_ID"
+names(data_long)[names(data_long) == "ps_dat$age"] <- "age"
+names(data_long)[names(data_long) == "ps_dat$study"] <- "context"
+names(data_long)[names(data_long) == "choose_friend"] <- "helper"
+data_long$age <- as.factor(data_long$age)
 
-#kruskal.test(type ~ choose_friend, data = data_long) 
-#kruskal.test(type ~ `ps_dat$age`, data = data_long) 
+#Statistical significance testing 
+q3_mod <- (glmer(choose_friend_num ~ context + age + (1|participant_ID), family = binomial(),data= data_long)) 
+
+post_hoc3 <- lme(choose_friend_num ~ age + context, data=data_long, random=~1|`participant_ID`)
+anova(post_hoc)
+
+#Post hoc tests 
+#Age
+summary(glht(post_hoc3, linfct=mcp(age = "Tukey")), test = adjusted(type = "bonferroni"))
 ```
 
-```{r}
-f_dat <- subset(test_dat, choose_friend=="f")
-  
-f_dat <- spread(f_dat, key = "type", value= "choose_friend_num")
-```
 
-#Question 3 data manipulation
-```{r}
-data_long$choose_friend_num <- ifelse(data_long$choose_friend=="f", 1, 0)
-
-summary(glm(choose_friend_num ~ `ps_dat$study` + `ps_dat$age`, family = binomial(),data= data_long))
-```
 
 
