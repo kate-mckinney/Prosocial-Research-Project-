@@ -106,36 +106,36 @@ summary(glht(post_hoc1, linfct=mcp(study = "Tukey")), test = adjusted(type = "bo
 #Creating subset of dataset 
 make_long <- cbind.data.frame(ps_dat$databraryID ,ps_dat$age,ps_dat$study,ps_dat$choose_friend1, ps_dat$choose_friend2, ps_dat$choose_friend3, ps_dat$choose_friend4, ps_dat$choose_friend5, ps_dat$choose_friend6, ps_dat$type_help1,ps_dat$type_help2,ps_dat$type_help3,ps_dat$type_help4,ps_dat$type_help5,ps_dat$type_help6)
 
+
 datLong<- pivot_longer(make_long, c(colnames(make_long[4:15])), names_to= "trial", values_to="data")
 
 intermediateDat<- datLong %>% separate(col = trial, into = c("response", "trialNumber"), sep= -1)
 
 finalDat<- pivot_wider(intermediateDat, id_cols = c("ps_dat$databraryID", "ps_dat$study", "ps_dat$age", "trialNumber"),names_from = "response", values_from= "data")
 
+# to subset into friend and nonfriend 
+
 finalDat$id<- as.factor(finalDat$`ps_dat$databraryID`)
 finalDat$trialNumber<- as.factor(finalDat$trialNumber)
 finalDat$chooseFriend<- as.factor(finalDat$`ps_dat$choose_friend`)
 finalDat$typeHelp<- as.factor(finalDat$`ps_dat$type_help`)
 
-table<- finalDat %>% group_by(id, chooseFriend) %>% 
-  summarize(typeHelp,total_count = n())
-#View(table)
+table<- finalDat %>% count(id, typeHelp, chooseFriend, sort=TRUE)
+levels(table$chooseFriend)<-c(NA, "f", "n","n")
+levels(table$typeHelp)<- c(NA, "comfort", "comfort", "goal","goal","none","none", "share")
+View(table)  
 
-a<-unique(table)
-#View(a)
 
-goal<- subset(a, a$typeHelp=="goal")
-summary(aov(total_count~chooseFriend, data=goal))
+KatePSBdata <- read.csv("~/Desktop/KatePSBdata.csv")
+colnames(KatePSBdata)
+summary(aov(n ~ chooseFriend *typeHelp+ Error(id/chooseFriend), data= KatePSBdata))
 
-#Statistical significance testing 
-#Dr. W is playing around with this. Will add later.  
+demographics<- cbind.data.frame(ps_dat$databraryID,ps_dat$study, ps_dat$age)
 
-post_hoc3 <- lme(total_count~chooseFriend, data=a, random=~1|`id`)
-anova(post_hoc3)
+colnames(demographics)<- c("id", "study", "age")
+psb<-left_join(demographics,KatePSBdata)
 
-#Post hoc test
-#chooseFriend 
-summary(glht(post_hoc3, linfct=mcp(chooseFriend = "Tukey")), test = adjusted(type = "bonferroni"))
+summary(aov(n ~ chooseFriend *typeHelp+age+study+ Error(id), data= psb))
 ```
 #Question 3 
 ```{r}
